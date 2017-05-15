@@ -157,6 +157,9 @@ int main(int argc, char* argv[]) {
   out_file_ << "vx_ground_truth" << "\t";
   out_file_ << "vy_ground_truth" << "\n";
 
+  // #### temp & test ###
+  cout << "main: testing +++ generate sigma points +++" << endl;
+  ukf.Prediction(0.001);
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
