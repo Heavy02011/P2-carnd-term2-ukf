@@ -115,6 +115,8 @@ public:
   
   void SigmaPointPrediction(MatrixXd* Xsig_out);
   
+  void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
+  
 };
 
 #endif /* UKF_H */

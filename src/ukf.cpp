@@ -108,10 +108,17 @@ void UKF::Prediction(double delta_t) {
   UKF::AugmentedSigmaPoints(&Xsig_aug);
   std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
   
-  // 2. Sigma Point Prediction x(k+1|k)
+  // 2. predict Sigma Points of next time step x(k+1|k)
   MatrixXd Xsig_pred = MatrixXd(15, 5);
   UKF::SigmaPointPrediction(&Xsig_pred);
   std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
+  
+  // 3. predict mean and covariance of next time step
+  VectorXd x_pred = VectorXd(5);
+  MatrixXd P_pred = MatrixXd(5, 5);
+  UKF::PredictMeanAndCovariance(&x_pred, &P_pred);
+  std::cout << "x_pred = " << std::endl << x_pred << std::endl;
+  std::cout << "P_pred = " << std::endl << P_pred << std::endl;
   
 }
 
@@ -250,17 +257,17 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
 
 }
 
-void UKF::SigmaPointPrediction(MatrixXd* Xsig_out) {
+void UKF::SigmaPointPrediction(MatrixXd* Xsig_out3) {
 
   //set state dimension
-  int n_x = 5;
+  int n_x_ = 5;
 
   //set augmented dimension
-  int n_aug = 7;
+  int n_aug_ = 7;
 
   //create example sigma point matrix
-  MatrixXd Xsig_aug = MatrixXd(n_aug, 2 * n_aug + 1);
-     Xsig_aug <<
+  MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+     Xsig_aug_ <<
     5.7441,  5.85768,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.63052,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,   5.7441,
       1.38,  1.34566,  1.52806,     1.38,     1.38,     1.38,     1.38,     1.38,   1.41434,  1.23194,     1.38,     1.38,     1.38,     1.38,     1.38,
     2.2049,  2.28414,  2.24557,  2.29582,   2.2049,   2.2049,   2.2049,   2.2049,   2.12566,  2.16423,  2.11398,   2.2049,   2.2049,   2.2049,   2.2049,
@@ -270,7 +277,7 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out) {
          0,        0,        0,        0,        0,        0,        0,  0.34641,         0,        0,        0,        0,        0,        0, -0.34641;
 
   //create matrix with predicted sigma points as columns
-  MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
+  MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   double delta_t = 0.1; //time diff in sec
 /*******************************************************************************
@@ -278,16 +285,16 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out) {
  ******************************************************************************/
 
   //predict sigma points
-  for (int i = 0; i< 2*n_aug+1; i++)
+  for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability
-    double p_x = Xsig_aug(0,i);
-    double p_y = Xsig_aug(1,i);
-    double v = Xsig_aug(2,i);
-    double yaw = Xsig_aug(3,i);
-    double yawd = Xsig_aug(4,i);
-    double nu_a = Xsig_aug(5,i);
-    double nu_yawdd = Xsig_aug(6,i);
+    double p_x = Xsig_aug_(0,i);
+    double p_y = Xsig_aug_(1,i);
+    double v = Xsig_aug_(2,i);
+    double yaw = Xsig_aug_(3,i);
+    double yawd = Xsig_aug_(4,i);
+    double nu_a = Xsig_aug_(5,i);
+    double nu_yawdd = Xsig_aug_(6,i);
 
     //predicted state values
     double px_p, py_p;
@@ -315,11 +322,11 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out) {
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    Xsig_pred(0,i) = px_p;
-    Xsig_pred(1,i) = py_p;
-    Xsig_pred(2,i) = v_p;
-    Xsig_pred(3,i) = yaw_p;
-    Xsig_pred(4,i) = yawd_p;
+    Xsig_pred_(0,i) = px_p;
+    Xsig_pred_(1,i) = py_p;
+    Xsig_pred_(2,i) = v_p;
+    Xsig_pred_(3,i) = yaw_p;
+    Xsig_pred_(4,i) = yawd_p;
   }
 
 /*******************************************************************************
@@ -330,6 +337,83 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out) {
   //std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
 
   //write result
-  *Xsig_out = Xsig_pred;
+  *Xsig_out3 = Xsig_pred_;
 
+}
+
+void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
+
+  //set state dimension
+  int n_x = 5;
+
+  //set augmented dimension
+  int n_aug = 7;
+
+  //define spreading parameter
+  double lambda = 3 - n_aug;
+
+  //create example matrix with predicted sigma points
+  MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
+  Xsig_pred <<
+         5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
+           1.48,  1.4436,   1.660,  1.4934,  1.5036,    1.48,  1.4868,    1.48,  1.5271,  1.3104,  1.4787,  1.4674,    1.48,  1.4851,    1.486,
+          2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
+         0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
+          0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
+
+  //create vector for weights
+  VectorXd weights = VectorXd(2*n_aug+1);
+  
+  //create vector for predicted state
+  VectorXd x = VectorXd(n_x);
+
+  //create covariance matrix for prediction
+  MatrixXd P = MatrixXd(n_x, n_x);
+
+
+/*******************************************************************************
+ * Student part begin
+ ******************************************************************************/
+
+  // set weights
+  double weight_0 = lambda/(lambda+n_aug);
+  weights(0) = weight_0;
+  for (int i=1; i<2*n_aug+1; i++) {  //2n+1 weights
+    double weight = 0.5/(n_aug+lambda);
+    weights(i) = weight;
+  }
+
+  //predicted state mean
+  x.fill(0.0);
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
+    x = x+ weights(i) * Xsig_pred.col(i);
+  }
+
+  //predicted state covariance matrix
+  P.fill(0.0);
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
+
+    // state difference
+    VectorXd x_diff = Xsig_pred.col(i) - x;
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    P = P + weights(i) * x_diff * x_diff.transpose() ;
+  }
+
+
+/*******************************************************************************
+ * Student part end
+ ******************************************************************************/
+
+  //print result
+  //std::cout << "Predicted state" << std::endl;
+  //std::cout << x << std::endl;
+  //std::cout << "Predicted covariance matrix" << std::endl;
+  //std::cout << P << std::endl;
+
+  //write result
+  *x_out = x;
+  *P_out = P;
 }
