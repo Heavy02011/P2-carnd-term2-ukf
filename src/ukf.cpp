@@ -128,11 +128,14 @@ void UKF::Prediction(double delta_t) {
   
   
   // predict sigma points
-  MatrixXd Xsig = MatrixXd(11, 5);
-  UKF::GenerateSigmaPoints(&Xsig);
-
-  //print result
-  std::cout << "Xsig = " << std::endl << Xsig << std::endl;
+  //MatrixXd Xsig = MatrixXd(11, 5);
+  //UKF::GenerateSigmaPoints(&Xsig);
+  //UKF::AugmentedSigmaPoints(&Xsig_out)
+  MatrixXd Xsig_aug = MatrixXd(15, 7);
+  UKF::AugmentedSigmaPoints(&Xsig_aug);
+  
+//print result
+  std::cout << "Xsig = " << std::endl << Xsig_aug << std::endl;
   
 }
 
@@ -218,4 +221,105 @@ Xsig =
   0.5015 0.426481 0.669828 0.521411 0.622501   0.5015 0.576519 0.333172 0.481589 0.380499   0.5015
   0.3528 0.284601 0.493935 0.383189 0.522398 0.437903 0.420999 0.211665 0.322411 0.183202 0.267697
 */
+}
+
+void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+
+  //set state dimension
+  int n_x_ = 5;
+
+  //set augmented dimension
+  int n_aug_ = 7;
+
+  //Process noise standard deviation longitudinal acceleration in m/s^2
+  double std_a_ = 0.2;
+
+  //Process noise standard deviation yaw acceleration in rad/s^2
+  double std_yawdd_ = 0.2;
+
+  //define spreading parameter
+  double lambda_ = 3 - n_aug_;
+
+  //set example state
+  VectorXd x_ = VectorXd(n_x_);
+  x_ <<   5.7441,
+         1.3800,
+         2.2049,
+         0.5015,
+         0.3528;
+
+  //create example covariance matrix
+  MatrixXd P = MatrixXd(n_x_, n_x_);
+  P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
+          -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
+           0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
+          -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
+          -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
+
+  //create augmented mean vector
+  VectorXd x_aug_ = VectorXd(7);
+
+  //create augmented state covariance
+  MatrixXd P_aug_ = MatrixXd(7, 7);
+
+  //create sigma point matrix
+  MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+
+/*******************************************************************************
+ * Student part begin
+ ******************************************************************************/
+ 
+  //create augmented mean state
+  x_aug_.head(5) = x_;
+  x_aug_(5) = 0;
+  x_aug_(6) = 0;
+
+  //create augmented covariance matrix
+  P_aug_.fill(0.0);
+  P_aug_.topLeftCorner(5,5) = P_;
+  P_aug_(5,5) = std_a_*std_a_;
+  P_aug_(6,6) = std_yawdd_*std_yawdd_;
+
+  //create square root matrix
+  MatrixXd L_ = P_aug_.llt().matrixL();
+
+  //create augmented sigma points
+  Xsig_aug_.col(0)  = x_aug_;
+  for (int i = 0; i< n_aug_; i++)
+  {
+    Xsig_aug_.col(i+1)        = x_aug_ + sqrt(lambda_+n_aug_) * L_.col(i);
+    Xsig_aug_.col(i+1+n_aug_) = x_aug_ - sqrt(lambda_+n_aug_) * L_.col(i);
+  }
+  
+/*******************************************************************************
+ * Student part end
+ ******************************************************************************/
+
+  //print result
+  std::cout << "Xsig_aug = " << std::endl << Xsig_aug_ << std::endl;
+
+  //write result
+  *Xsig_out = Xsig_aug_;
+
+/* expected result:
+   Xsig_aug =
+  5.7441  5.85768   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441  5.63052   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441
+    1.38  1.34566  1.52806     1.38     1.38     1.38     1.38     1.38  1.41434  1.23194     1.38     1.38     1.38     1.38     1.38
+  2.2049  2.28414  2.24557  2.29582   2.2049   2.2049   2.2049   2.2049  2.12566  2.16423  2.11398   2.2049   2.2049   2.2049   2.2049
+  0.5015  0.44339 0.631886 0.516923 0.595227   0.5015   0.5015   0.5015  0.55961 0.371114 0.486077 0.407773   0.5015   0.5015   0.5015
+  0.3528 0.299973 0.462123 0.376339  0.48417 0.418721   0.3528   0.3528 0.405627 0.243477 0.329261  0.22143 0.286879   0.3528   0.3528
+       0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641        0
+       0        0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641
+
+actual result
+Xsig_aug = 
+  5.7441  5.85768   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441  5.63052   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441
+    1.38  1.34566  1.52806     1.38     1.38     1.38     1.38     1.38  1.41434  1.23194     1.38     1.38     1.38     1.38     1.38
+  2.2049  2.28414  2.24557  2.29582   2.2049   2.2049   2.2049   2.2049  2.12566  2.16423  2.11398   2.2049   2.2049   2.2049   2.2049
+  0.5015  0.44339 0.631886 0.516923 0.595227   0.5015   0.5015   0.5015  0.55961 0.371114 0.486077 0.407773   0.5015   0.5015   0.5015
+  0.3528 0.299973 0.462123 0.376339  0.48417 0.418721   0.3528   0.3528 0.405627 0.243477 0.329261  0.22143 0.286879   0.3528   0.3528
+       0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641        0
+       0        0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.3464
+*/
+
 }
