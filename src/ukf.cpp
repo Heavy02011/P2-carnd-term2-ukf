@@ -52,12 +52,7 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
-  //set state dimension
-  n_x_ = 5;
-
-  //define spreading parameter
-  double lambda_ = 3 - n_x_;
-
+  
   //set example state
   //VectorXd x = VectorXd(n_x);
   x_ <<   5.7441,
@@ -73,28 +68,6 @@ UKF::UKF() {
            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
           -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
           -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
-
-  // predicted sigma points matrix
-  //Xsig_pred_ = MatrixXd() ;
-/*
-  // Weights of sigma points
-  weights_ = VectorXd();
-
-  // State dimension
-  n_x_ = 5;
-
-  // Augmented state dimension
-  n_aug_ = xx;
-
-  // Sigma point spreading parameter
-  lambda_ = 3 - n_x/n_aug;
-
-  // the current NIS for radar
-  NIS_radar_;
-
-  // the current NIS for laser
-  NIS_laser_;
-*/
   
 }
 
@@ -174,6 +147,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 //#############################################################################
 
 void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
+
+  //set state dimension
+  n_x_ = 5;
+
+  //define spreading parameter
+  double lambda_ = 3 - n_x_;
 
   //create sigma point matrix
   MatrixXd Xsig = MatrixXd(n_x_, 2 * n_x_ + 1);
