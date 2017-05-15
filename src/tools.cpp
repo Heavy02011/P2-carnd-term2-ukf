@@ -16,12 +16,6 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   TODO:
     * Calculate the RMSE here.
   */
-//VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
-//                              const vector<VectorXd> &ground_truth) {
-  /**
-  TODO: ### rbx ok ###
-    * Calculate the RMSE here.
-  */
   VectorXd rmse(4);
   rmse << 0,0,0,0;
 
@@ -52,5 +46,3 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   //return the result
   return rmse;
 }
-
-//}
