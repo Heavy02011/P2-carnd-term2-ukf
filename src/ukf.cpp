@@ -133,13 +133,14 @@ void UKF::Prediction(double delta_t) {
   
   MatrixXd Xsig_aug = MatrixXd(15, 7);
   UKF::AugmentedSigmaPoints(&Xsig_aug);
-  std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
+  //std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
   std::cout << "Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl;
   
   // 2. predict Sigma Points of next time step x(k+1|k)
   MatrixXd Xsig_pred = MatrixXd(15, 5);
   UKF::SigmaPointPrediction(&Xsig_pred);
-  std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
+  //std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
+  std::cout << "Xsig_pred_ = " << std::endl << Xsig_pred_ << std::endl;
   
   // 3. predict mean and covariance of next time step
   VectorXd x_pred = VectorXd(5);
@@ -312,7 +313,7 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out3) {
          0,        0,        0,        0,        0,        0,        0,  0.34641,         0,        0,        0,        0,        0,        0, -0.34641;
 */
   //create matrix with predicted sigma points as columns
-  MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   double delta_t = 0.1; //time diff in sec
 /*******************************************************************************
