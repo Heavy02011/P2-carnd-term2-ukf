@@ -25,10 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 30; //##############################################################
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 30; //##########################################################
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -68,6 +68,33 @@ UKF::UKF() {
            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
           -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
           -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
+
+  //set state dimension
+  n_x_ = 5;
+
+  //set augmented dimension
+  n_aug_ = 7;
+
+  //Process noise standard deviation longitudinal acceleration in m/s^2
+  std_a_ = 0.2;
+
+  //Process noise standard deviation yaw acceleration in rad/s^2
+  std_yawdd_ = 0.2;
+
+  //define spreading parameter
+  lambda_ = 3 - n_aug_;
+  
+  //create augmented mean vector
+  VectorXd x_aug_ = VectorXd(7);
+
+  //create augmented state covariance
+  MatrixXd P_aug_ = MatrixXd(7, 7);
+
+  //create sigma point matrix
+  MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+  
+  //create matrix with predicted sigma points as columns
+  //MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
   
 }
 
@@ -107,6 +134,7 @@ void UKF::Prediction(double delta_t) {
   MatrixXd Xsig_aug = MatrixXd(15, 7);
   UKF::AugmentedSigmaPoints(&Xsig_aug);
   std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
+  std::cout << "Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl;
   
   // 2. predict Sigma Points of next time step x(k+1|k)
   MatrixXd Xsig_pred = MatrixXd(15, 5);
@@ -120,6 +148,7 @@ void UKF::Prediction(double delta_t) {
   std::cout << "x_pred = " << std::endl << x_pred << std::endl;
   std::cout << "P_pred = " << std::endl << P_pred << std::endl;
   
+  //cout << "predict:<< std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
 }
 
 /**
@@ -194,7 +223,7 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out) {
 }
 
 void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
-
+/*
   //set state dimension
   int n_x_ = 5;
 
@@ -218,7 +247,9 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
 
   //create sigma point matrix
   MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
- 
+*/
+  cout << "AugmentedSigmaPoints: lambda_ " << 3 - n_aug_ << endl;
+  
   //create augmented mean state
   x_aug_.head(5) = x_;
   x_aug_(5) = 0;
@@ -227,9 +258,12 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   //create augmented covariance matrix
   P_aug_.fill(0.0);
   P_aug_.topLeftCorner(5,5) = P_;
+  cout << "std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
   P_aug_(5,5) = std_a_*std_a_;
   P_aug_(6,6) = std_yawdd_*std_yawdd_;
 
+  cout << "P_aug_ " << P_aug_ << endl;
+  
   //create square root matrix
   MatrixXd L_ = P_aug_.llt().matrixL();
 
@@ -253,12 +287,13 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   0.3528 0.299973 0.462123 0.376339  0.48417 0.418721   0.3528   0.3528 0.405627 0.243477 0.329261  0.22143 0.286879   0.3528   0.3528
        0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641        0
        0        0        0        0        0        0        0  0.34641        0        0        0        0        0        0 -0.34641
+
 */
 
 }
 
 void UKF::SigmaPointPrediction(MatrixXd* Xsig_out3) {
-
+/*
   //set state dimension
   int n_x_ = 5;
 
@@ -275,7 +310,7 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out3) {
     0.3528, 0.299973, 0.462123, 0.376339,  0.48417, 0.418721,   0.3528,   0.3528,  0.405627, 0.243477, 0.329261,  0.22143, 0.286879,   0.3528,   0.3528,
          0,        0,        0,        0,        0,        0,  0.34641,        0,         0,        0,        0,        0,        0, -0.34641,        0,
          0,        0,        0,        0,        0,        0,        0,  0.34641,         0,        0,        0,        0,        0,        0, -0.34641;
-
+*/
   //create matrix with predicted sigma points as columns
   MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
