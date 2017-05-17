@@ -96,6 +96,10 @@ UKF::UKF() {
   //create matrix with predicted sigma points as columns
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
   
+  is_initialized_ = false;
+
+  previous_timestamp_ = 0;
+  
 }
 
 UKF::~UKF() {}
@@ -111,6 +115,140 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+  
+  /*****************************************************************************
+   *  Initialization
+   ****************************************************************************/
+   if (!is_initialized_) {
+    //cout << "rbx: FusionEKF initializing..." << endl;
+    /**
+    TODO:
+      * Initialize the state ekf_.x_ with the first measurement.
+      * Create the covariance matrix.
+      * Remember: you'll need to convert radar from polar to cartesian coordinates.
+    */
+    //set the state with the initial location and zero velocity
+
+    // first measurement
+    cout << "EKF: " << endl;
+    //x_ = VectorXd(5);
+    x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
+
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      /**
+      Convert radar from polar to cartesian coordinates and initialize state.
+      */
+/*
+      double rho = meas_package.raw_measurements_[0];
+      double phi = meas_package.raw_measurements_[1];
+      double rho_dot = meas_package.raw_measurements_[2];
+      double x= rho * cos(phi);
+      double y= rho * sin(phi);
+      double vx = rho_dot * cos(phi);
+      double vy = rho_dot * sin(phi);
+      x_ << x, y, vx, vy,0;
+      // #### check #####
+*/
+    }
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+
+      //Initialize state.
+      double px = meas_package.raw_measurements_[0]; 
+      double py = meas_package.raw_measurements_[1];
+      double v = 0;
+      double psi = 0;
+      double psidot = 0;
+      // setup state vector
+      x_ << px,py,v,psi,psidot;
+
+    }
+
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    previous_timestamp_ = meas_package.timestamp_; // correction # 1
+    cout << "initialization: x_" << x_ << endl;
+    cout << "initialization: P_" << P_ << endl;
+    return;
+  }
+
+  /*****************************************************************************
+   *  Prediction
+   ****************************************************************************/
+
+  /**
+   TODO:
+     * Update the state transition matrix F according to the new elapsed time.
+      - Time is measured in seconds.
+     * Update the process noise covariance matrix.
+     * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
+   */
+
+  float noise_ax = 9;
+  float noise_ay = 9;
+
+  //compute the time elapsed between the current and previous measurements
+  float dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
+  previous_timestamp_ = meas_package.timestamp_;
+/*  
+  // possible improvement: if ( dt > 0.001 )
+  float dt_2 = dt * dt; 
+  float dt_3 = dt_2 * dt;
+  float dt_4 = dt_3 * dt;
+
+  // setup matrix F
+  F_ << 1, 0, 1, 0,
+             0, 1, 0, 1,
+             0, 0, 1, 0,
+             0, 0, 0, 1;
+  //Modify the F matrix so that the time is integrated
+  F_(0, 2) = dt;
+  F_(1, 3) = dt;
+
+  //set the process covariance matrix Q
+  Q_ = MatrixXd(4, 4);
+  Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0, 
+              0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
+              dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
+              0, dt_3/2*noise_ay, 0, dt_2*noise_ay;  
+  
+  Predict();
+*/
+  
+  cout << "ukf: testing +++ generate sigma points +++" << endl;
+  //dt = 0.001;
+  Prediction(dt);
+  
+  /*****************************************************************************
+   *  Update
+   ****************************************************************************/
+
+  /**
+   TODO:
+     * Use the sensor type to perform the update step.
+     * Update the state and covariance matrices.
+   */
+/*
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    // Radar updates
+    //cout << "Updating Radar" << endl;
+    H_ = tools.CalculateJacobian(x_);
+    R_ = R_radar_;
+    UpdateEKF(meas_package.raw_measurements_);
+
+  } else {
+    // Laser updates
+    //measurement update
+    //cout << "Updating Laser" << endl;
+    H_ = H_laser_;
+    R_ = R_laser_;
+    Update(meas_package.raw_measurements_);
+
+  }
+ 
+  // print the output
+  cout << "x_ = " << x_ << endl;
+  cout << "P_ = " << P_ << endl;
+*/  
 }
 
 /**

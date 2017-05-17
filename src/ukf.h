@@ -82,7 +82,7 @@ public:
 
   //create sigma point matrix
   MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
-
+  
   /**
    * Constructor
    */
@@ -125,6 +125,11 @@ public:
   void SigmaPointPrediction(MatrixXd* Xsig_out);
   
   void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
+  
+private:
+
+  // previous timestamp
+  long long previous_timestamp_;
   
 };
 

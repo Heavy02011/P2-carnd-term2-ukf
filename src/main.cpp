@@ -158,8 +158,8 @@ int main(int argc, char* argv[]) {
   out_file_ << "vy_ground_truth" << "\n";
 
   // #### temp & test ###
-  cout << "main: testing +++ generate sigma points +++" << endl;
-  ukf.Prediction(0.001);
+  //cout << "main: testing +++ generate sigma points +++" << endl;
+  //ukf.Prediction(0.001);
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
 
     // timestamp
     out_file_ << measurement_pack_list[k].timestamp_ << "\t"; // pos1 - est
-
+    cout << "main: ok1" << endl;
     // output the state vector
     out_file_ << ukf.x_(0) << "\t"; // pos1 - est
     out_file_ << ukf.x_(1) << "\t"; // pos2 - est
