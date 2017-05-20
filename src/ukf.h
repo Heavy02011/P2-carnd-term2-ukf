@@ -102,6 +102,9 @@ public:
   // Lidar measurement noise covariance matrix
   MatrixXd R_lidar_;
   
+  // time elapsed between the current and previous measurements
+  float dt;
+  
   /**
    * Constructor
    */

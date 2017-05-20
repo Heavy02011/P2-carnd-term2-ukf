@@ -75,20 +75,20 @@ UKF::UKF() {
 
   //set example covariance matrix
   //MatrixXd P = MatrixXd(n_x, n_x);
- 
+/* 
   P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
           -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
           -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
           -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
-/*     
+*/    
     // initialize state covarianve matrix
     P_ << 1, 0, 0, 0, 0,
           0, 1, 0, 0, 0,
           0, 0, 1, 0, 0,
           0, 0, 0, 1, 0,
           0, 0, 0, 0, 1;
-*/          
+         
   //set state dimension
   n_x_ = 5;
 
@@ -96,10 +96,10 @@ UKF::UKF() {
   n_aug_ = 7;
 
   //Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.2;
+  //std_a_ = 0.2;
 
   //Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.2;
+  //std_yawdd_ = 0.2;
 
   //define spreading parameter
   lambda_ = 3 - n_aug_;
@@ -131,7 +131,6 @@ UKF::UKF() {
   
   //create matrix for sigma points in measurement space
   Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
-  
 
   //measurement covariance matrix - laser
   R_lidar_ = MatrixXd(2, 2);
@@ -155,6 +154,10 @@ UKF::UKF() {
   
   // Weights of sigma points
   weights_ = VectorXd(2*n_aug_+1);
+  
+  // time elapsed between the current and previous measurements
+  dt = 0.001;
+  
 }
 
 UKF::~UKF() {}
@@ -264,7 +267,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   float noise_ay = 9;
 
   //compute the time elapsed between the current and previous measurements
-  float dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
+  dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
   previous_timestamp_ = meas_package.timestamp_;
 /*  
   // possible improvement: if ( dt > 0.001 )
@@ -359,13 +362,14 @@ void UKF::Prediction(double delta_t) {
   MatrixXd Xsig_aug = MatrixXd(15, 7);
   UKF::AugmentedSigmaPoints(&Xsig_aug);
   //std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
-  //##std::cout << "Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl;
+  std::cout << "UKF::Prediction: Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl; //rbxok
   
   // 2. predict Sigma Points of next time step x(k+1|k)
   MatrixXd Xsig_pred = MatrixXd(15, 5);
   UKF::SigmaPointPrediction(&Xsig_pred);
   //std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
-  //##std::cout << "Xsig_pred_ = " << std::endl << Xsig_pred_ << std::endl;
+  std::cout << "UKF::Prediction: Xsig_pred_ = " << std::endl << Xsig_pred_ << std::endl; // rbxok
+  cout << "UKF::Prediction: dt = " << std::endl << dt << std::endl; // rbxok
   
   // 3. predict mean and covariance of next time step
   VectorXd x_pred = VectorXd(5);
@@ -723,7 +727,7 @@ void UKF::SigmaPointPrediction(MatrixXd* Xsig_out3) {
   //create matrix with predicted sigma points as columns
   //Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
-  double delta_t = 0.1; //time diff in sec
+  double delta_t = dt; //0.1; //time diff in sec
 /*******************************************************************************
  * Student part begin
  ******************************************************************************/
