@@ -773,38 +773,38 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
 void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //set state dimension
-  int n_x = 5;
+  n_x_ = 5;
 
   //set augmented dimension
-  int n_aug = 7;
+  n_aug_ = 7;
 
   //set measurement dimension, radar can measure r, phi, and r_dot
-  int n_z = 3;
+  int n_z_ = 3;
 
   //define spreading parameter
-  double lambda = 3 - n_aug;
+  lambda_ = 3 - n_aug_;
 
   //set vector for weights
-  VectorXd weights = VectorXd(2*n_aug+1);
-   double weight_0 = lambda/(lambda+n_aug);
-  weights(0) = weight_0;
-  for (int i=1; i<2*n_aug+1; i++) {  
-    double weight = 0.5/(n_aug+lambda);
-    weights(i) = weight;
+  VectorXd weights_ = VectorXd(2*n_aug_+1);
+   double weight_0_ = lambda_/(lambda_+n_aug_);
+  weights_(0) = weight_0_;
+  for (int i=1; i<2*n_aug_+1; i++) {  
+    double weight_ = 0.5/(n_aug_+lambda_);
+    weights_(i) = weight_;
   }
 
   //radar measurement noise standard deviation radius in m
-  double std_radr = 0.3;
+  double std_radr_ = 0.3;
 
   //radar measurement noise standard deviation angle in rad
-  double std_radphi = 0.0175;
+  double std_radphi_ = 0.0175;
 
   //radar measurement noise standard deviation radius change in m/s
-  double std_radrd = 0.1;
+  double std_radrd_ = 0.1;
 
   //create example matrix with predicted sigma points
-  MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
-  Xsig_pred <<
+  MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  Xsig_pred_ <<
          5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
            1.48,  1.4436,   1.660,  1.4934,  1.5036,    1.48,  1.4868,    1.48,  1.5271,  1.3104,  1.4787,  1.4674,    1.48,  1.4851,    1.486,
           2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
@@ -812,57 +812,57 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
           0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
 
   //create matrix for sigma points in measurement space
-  MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug + 1);
+  MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
 
 /*******************************************************************************
  * Student part begin
  ******************************************************************************/
 
   //transform sigma points into measurement space
-  for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 simga points
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
 
     // extract values for better readibility
-    double p_x = Xsig_pred(0,i);
-    double p_y = Xsig_pred(1,i);
-    double v  = Xsig_pred(2,i);
-    double yaw = Xsig_pred(3,i);
+    double p_x = Xsig_pred_(0,i);
+    double p_y = Xsig_pred_(1,i);
+    double v  = Xsig_pred_(2,i);
+    double yaw = Xsig_pred_(3,i);
 
     double v1 = cos(yaw)*v;
     double v2 = sin(yaw)*v;
 
     // measurement model
-    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
-    Zsig(1,i) = atan2(p_y,p_x);                                 //phi
-    Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
+    Zsig_(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
+    Zsig_(1,i) = atan2(p_y,p_x);                                 //phi
+    Zsig_(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
   }
 
   //mean predicted measurement
-  VectorXd z_pred = VectorXd(n_z);
-  z_pred.fill(0.0);
-  for (int i=0; i < 2*n_aug+1; i++) {
-      z_pred = z_pred + weights(i) * Zsig.col(i);
+  VectorXd z_pred_ = VectorXd(n_z_);
+  z_pred_.fill(0.0);
+  for (int i=0; i < 2*n_aug_+1; i++) {
+      z_pred_ = z_pred_ + weights_(i) * Zsig_.col(i);
   }
 
   //measurement covariance matrix S
-  MatrixXd S = MatrixXd(n_z,n_z);
-  S.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 simga points
+  MatrixXd S_ = MatrixXd(n_z_,n_z_);
+  S_.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
     //residual
-    VectorXd z_diff = Zsig.col(i) - z_pred;
+    VectorXd z_diff_ = Zsig_.col(i) - z_pred_;
 
     //angle normalization
-    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
 
-    S = S + weights(i) * z_diff * z_diff.transpose();
+    S_ = S_ + weights_(i) * z_diff_ * z_diff_.transpose();
   }
 
   //add measurement noise covariance matrix
-  MatrixXd R = MatrixXd(n_z,n_z);
-  R <<    std_radr*std_radr, 0, 0,
-          0, std_radphi*std_radphi, 0,
-          0, 0,std_radrd*std_radrd;
-  S = S + R;
+  MatrixXd R_ = MatrixXd(n_z_,n_z_);
+  R_ <<    std_radr_*std_radr_, 0, 0,
+          0, std_radphi_*std_radphi_, 0,
+          0, 0,std_radrd_*std_radrd_;
+  S_ = S_ + R_;
 
   
 /*******************************************************************************
@@ -870,11 +870,11 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
  ******************************************************************************/
 
   //print result
-  std::cout << "z_pred: " << std::endl << z_pred << std::endl;
-  std::cout << "S: " << std::endl << S << std::endl;
+  std::cout << "z_pred: " << std::endl << z_pred_ << std::endl;
+  std::cout << "S: " << std::endl << S_ << std::endl;
 
   //write result
-  *z_out = z_pred;
-  *S_out = S;
+  *z_out = z_pred_;
+  *S_out = S_;
 
 }
