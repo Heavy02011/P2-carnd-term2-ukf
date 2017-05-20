@@ -83,6 +83,19 @@ public:
   //create sigma point matrix
   MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
   
+  //####
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z_ = 3;
+  
+  //add measurement noise covariance matrix
+  MatrixXd S_ = MatrixXd(3, 3);
+  
+  //mean predicted measurement
+  VectorXd z_pred_ = VectorXd(n_z_);
+  
+  //create matrix for sigma points in measurement space
+  MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
+  
   /**
    * Constructor
    */

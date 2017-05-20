@@ -35,7 +35,7 @@ UKF::UKF() {
 
   // Laser measurement noise standard deviation position2 in m
   std_laspy_ = 0.15;
-
+/*
   // Radar measurement noise standard deviation radius in m
   std_radr_ = 0.3;
 
@@ -44,7 +44,19 @@ UKF::UKF() {
 
   // Radar measurement noise standard deviation radius change in m/s
   std_radrd_ = 0.3;
+*/
+  
+  // predict maesurement
+    //radar measurement noise standard deviation radius in m
+  std_radr_ = 0.3;
 
+  //radar measurement noise standard deviation angle in rad
+  std_radphi_ = 0.0175;
+
+  //radar measurement noise standard deviation radius change in m/s
+  std_radrd_ = 0.1;
+ 
+  
   /**
   TODO:
 
@@ -100,6 +112,28 @@ UKF::UKF() {
 
   previous_timestamp_ = 0;
   
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  n_z_ = 3;
+  
+  //add measurement noise covariance matrix
+  S_ = MatrixXd(3, 3);
+  
+  //mean predicted measurement
+  z_pred_ = VectorXd(3);
+  
+  //create matrix for sigma points in measurement space
+  Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
+  
+/*  
+  //measurement covariance matrix - laser
+  R_laser_ << 0.0225, 0,
+        0, 0.0225;
+
+  //measurement covariance matrix - radar
+  R_radar_ << 0.09, 0, 0,
+        0, 0.0009, 0,
+        0, 0, 0.09;
+*/  
 }
 
 UKF::~UKF() {}
@@ -138,7 +172,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       /**
       Convert radar from polar to cartesian coordinates and initialize state.
       */
-/*
+
       double rho = meas_package.raw_measurements_[0];
       double phi = meas_package.raw_measurements_[1];
       double rho_dot = meas_package.raw_measurements_[2];
@@ -150,7 +184,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
       // ####### check ########
 
-*/
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
 
@@ -216,7 +249,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Predict();
 */
   
-  cout << "ukf: +++ prediction +++" << endl;
+  cout << "ukfProcessMeasurement: prediction" << endl;
   //dt = 0.001;
   Prediction(dt);
   
@@ -237,7 +270,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       cout << "Updating Radar" << endl;
       //H_ = tools.CalculateJacobian(x_);
       //R_ = R_radar_;
-      cout << "meas_package.raw_measurements_" << meas_package.raw_measurements_ << endl;
+      //cout << "meas_package.raw_measurements_" << meas_package.raw_measurements_ << endl;
       //UpdateEKF(meas_package.raw_measurements_);
       UpdateRadar(meas_package);
 
@@ -322,6 +355,19 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
+  
+  // predict new z
+  VectorXd z_out = VectorXd(3);
+  MatrixXd S_out = MatrixXd(3, 3);
+  //PredictRadarMeasurement(&z_out, &S_out);
+  PredictRadarMeasurement(&z_out, &S_out);
+/*
+  std::cout << "UpdateRadar: z_out: " << std::endl << z_out << std::endl;
+  std::cout << "UpdateRadar: S_out: " << std::endl << S_out << std::endl;
+  std::cout << "UpdateRadar: z_pred: " << std::endl << z_pred_ << std::endl;
+  std::cout << "UpdateRadar: S: " << std::endl << S_ << std::endl;
+*/  
+  //std::cout << "UpdateRadar: Zsig_: " << std::endl << Zsig_ << std::endl;
   /**
   TODO:
 
@@ -351,7 +397,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     double weight_ = 0.5/(n_aug_+lambda_);
     weights_(i) = weight_;
   }
-
+/*
   //create example matrix with predicted sigma points
   MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
   Xsig_pred_ <<
@@ -399,14 +445,17 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
       0.0946171, -0.000139448,   0.00407016,
    -0.000139448,  0.000617548, -0.000770652,
      0.00407016, -0.000770652,    0.0180917;
-
+*/
   //create example vector for incoming radar measurement
   VectorXd z_ = VectorXd(n_z_);
+/*
   z_ <<
       5.9214,
       0.2187,
       2.0062;
-
+*/  
+  z_ << meas_package.raw_measurements_(0), meas_package.raw_measurements_(1), meas_package.raw_measurements_(2);
+  
   //create matrix for cross correlation Tc
   MatrixXd Tc_ = MatrixXd(n_x_, n_z_);
 
@@ -565,7 +614,7 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   //create sigma point matrix
   MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
 */
-  cout << "AugmentedSigmaPoints: lambda_ " << 3 - n_aug_ << endl;
+  //cout << "AugmentedSigmaPoints: lambda_ " << 3 - n_aug_ << endl;
   
   //create augmented mean state
   x_aug_.head(5) = x_;
@@ -575,11 +624,11 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   //create augmented covariance matrix
   P_aug_.fill(0.0);
   P_aug_.topLeftCorner(5,5) = P_;
-  cout << "std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
+  //cout << "std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
   P_aug_(5,5) = std_a_*std_a_;
   P_aug_(6,6) = std_yawdd_*std_yawdd_;
 
-  cout << "P_aug_ " << P_aug_ << endl;
+  //cout << "P_aug_ " << P_aug_ << endl;
   
   //create square root matrix
   MatrixXd L_ = P_aug_.llt().matrixL();
@@ -771,7 +820,7 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
 }
 
 void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
-
+/*
   //set state dimension
   n_x_ = 5;
 
@@ -779,8 +828,8 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
   n_aug_ = 7;
 
   //set measurement dimension, radar can measure r, phi, and r_dot
-  int n_z_ = 3;
-
+  n_z_ = 3;
+*/
   //define spreading parameter
   lambda_ = 3 - n_aug_;
 
@@ -792,7 +841,7 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
     double weight_ = 0.5/(n_aug_+lambda_);
     weights_(i) = weight_;
   }
-
+/*
   //radar measurement noise standard deviation radius in m
   double std_radr_ = 0.3;
 
@@ -801,8 +850,11 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //radar measurement noise standard deviation radius change in m/s
   double std_radrd_ = 0.1;
+*/
+  
 
   //create example matrix with predicted sigma points
+/*
   MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
   Xsig_pred_ <<
          5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
@@ -810,10 +862,11 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
           2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
          0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
           0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
-
+*/
   //create matrix for sigma points in measurement space
-  MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
-
+  //MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
+//##rbx###
+  
 /*******************************************************************************
  * Student part begin
  ******************************************************************************/
@@ -837,14 +890,14 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
   }
 
   //mean predicted measurement
-  VectorXd z_pred_ = VectorXd(n_z_);
+  //VectorXd z_pred_ = VectorXd(n_z_);
   z_pred_.fill(0.0);
   for (int i=0; i < 2*n_aug_+1; i++) {
       z_pred_ = z_pred_ + weights_(i) * Zsig_.col(i);
   }
 
   //measurement covariance matrix S
-  MatrixXd S_ = MatrixXd(n_z_,n_z_);
+  //MatrixXd S_ = MatrixXd(n_z_,n_z_);
   S_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
     //residual
@@ -870,11 +923,23 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
  ******************************************************************************/
 
   //print result
-  std::cout << "z_pred: " << std::endl << z_pred_ << std::endl;
-  std::cout << "S: " << std::endl << S_ << std::endl;
+  //std::cout << "z_pred: " << std::endl << z_pred_ << std::endl;
+  //std::cout << "S: " << std::endl << S_ << std::endl;
 
   //write result
   *z_out = z_pred_;
   *S_out = S_;
+  
+/*
+z_pred: 
+ 6.12155
+0.245993
+ 2.10313
+S: 
+   0.0946171 -0.000139448   0.00407016
+-0.000139448  0.000617548 -0.000770652
+0.00407016 -0.000770652    0.0180917
+
+*/
 
 }
