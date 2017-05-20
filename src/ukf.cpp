@@ -373,8 +373,8 @@ void UKF::Prediction(double delta_t) {
   UKF::PredictMeanAndCovariance(&x_pred, &P_pred);
   //##std::cout << "x_pred = " << std::endl << x_pred << std::endl;
   //##std::cout << "P_pred = " << std::endl << P_pred << std::endl;
-  cout << "UKF::Prediction: x_pred = " << std::endl << x_pred_ << std::endl;
-  cout << "UKF::Prediction: P_pred = " << std::endl << P_pred_ << std::endl;
+  cout << "UKF::Prediction: x_ = " << std::endl << x_ << std::endl;
+  cout << "UKF::Prediction: P_ = " << std::endl << P_ << std::endl;
   //cout << "predict:<< std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
 }
 
@@ -805,6 +805,7 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
          0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
           0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
 */
+/*
   //create vector for weights
   VectorXd weights = VectorXd(2*n_aug_+1);
   
@@ -813,12 +814,12 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
 
   //create covariance matrix for prediction
   MatrixXd P = MatrixXd(n_x_, n_x_);
-
+*/
 
 /*******************************************************************************
  * Student part begin
  ******************************************************************************/
-
+/*
   // set weights
   double weight_0 = lambda_/(lambda_+n_aug_);
   weights(0) = weight_0;
@@ -826,24 +827,24 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
     double weight = 0.5/(n_aug_+lambda_);
     weights(i) = weight;
   }
-
+*/
   //predicted state mean
-  x.fill(0.0);
+  x_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
-    x = x+ weights(i) * Xsig_pred_.col(i);
+    x_ = x_+ weights_(i) * Xsig_pred_.col(i);
   }
 
   //predicted state covariance matrix
-  P.fill(0.0);
+  P_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = Xsig_pred_.col(i) - x;
+    VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
     //angle normalization
-    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
+    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
 
-    P = P + weights(i) * x_diff * x_diff.transpose() ;
+    P_ = P_ + weights_(i) * x_diff_ * x_diff_.transpose() ;
   }
 
 
@@ -858,8 +859,8 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
   //std::cout << P << std::endl;
 
   //write result
-  *x_out = x;
-  *P_out = P;
+  *x_out = x_;
+  *P_out = P_;
 }
 
 void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
