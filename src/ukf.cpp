@@ -190,6 +190,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
           0, 0, 0, 1, 0,
           0, 0, 0, 0, 1;
 */
+    // initialize weights
+    double weight_0_ = lambda_/(lambda_+n_aug_);
+    weights_(0) = weight_0_;
+    double weight_ = 0.5/(n_aug_+lambda_);
+    for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
+      weights_(i) = weight_;      
+    }
+    
     //set the state with the initial location and zero velocity
     //The state vector x for the CTRV model contains x=[px,p​y,v,psi,psidot]
       
@@ -235,7 +243,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
     previous_timestamp_ = meas_package.timestamp_; // correction # 1
     cout << "initialization: x_" << x_ << endl; //rbxok
-    cout << "initialization: P_" << P_ << endl;
+    cout << "initialization: P_" << P_ << endl; //diff
+    cout << "initialization: weights_" << weights_ << endl; //rbxok
     return;
   }
 
@@ -343,8 +352,8 @@ void UKF::Prediction(double delta_t) {
   */
   
   // 1. generate (augmented) sigma points x(k|k)
-  MatrixXd Xsig = MatrixXd(11, 5);
-  UKF::GenerateSigmaPoints(&Xsig);
+  //MatrixXd Xsig = MatrixXd(11, 5);
+  //UKF::GenerateSigmaPoints(&Xsig);
   //std::cout << "Xsig = " << std::endl << Xsig << std::endl;
   
   MatrixXd Xsig_aug = MatrixXd(15, 7);
@@ -364,7 +373,8 @@ void UKF::Prediction(double delta_t) {
   UKF::PredictMeanAndCovariance(&x_pred, &P_pred);
   //##std::cout << "x_pred = " << std::endl << x_pred << std::endl;
   //##std::cout << "P_pred = " << std::endl << P_pred << std::endl;
-  
+  cout << "UKF::Prediction: x_pred = " << std::endl << x_pred_ << std::endl;
+  cout << "UKF::Prediction: P_pred = " << std::endl << P_pred_ << std::endl;
   //cout << "predict:<< std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
 }
 
