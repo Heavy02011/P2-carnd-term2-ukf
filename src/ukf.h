@@ -126,6 +126,8 @@ public:
   
   void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
   
+  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out);
+  
 private:
 
   // previous timestamp
