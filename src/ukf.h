@@ -96,6 +96,12 @@ public:
   //create matrix for sigma points in measurement space
   MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
   
+  // Radar measurement noise covariance matrix
+  MatrixXd R_radar_;
+  
+  // Lidar measurement noise covariance matrix
+  MatrixXd R_lidar_;
+  
   /**
    * Constructor
    */

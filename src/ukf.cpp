@@ -25,10 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30; //##############################################################
+  std_a_ = 1.5; //30; //##############################################################
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30; //##########################################################
+  std_yawdd_ = 0.5; //30; //##########################################################
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -75,12 +75,20 @@ UKF::UKF() {
 
   //set example covariance matrix
   //MatrixXd P = MatrixXd(n_x, n_x);
+ 
   P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
           -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
           -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
           -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
-
+/*     
+    // initialize state covarianve matrix
+    P_ << 1, 0, 0, 0, 0,
+          0, 1, 0, 0, 0,
+          0, 0, 1, 0, 0,
+          0, 0, 0, 1, 0,
+          0, 0, 0, 0, 1;
+*/          
   //set state dimension
   n_x_ = 5;
 
@@ -124,16 +132,29 @@ UKF::UKF() {
   //create matrix for sigma points in measurement space
   Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
   
-/*  
+
   //measurement covariance matrix - laser
+  R_lidar_ = MatrixXd(2, 2);
+  R_lidar_ << std_laspx_*std_laspx_,0,
+    0,std_laspy_*std_laspy_;
+/*
   R_laser_ << 0.0225, 0,
         0, 0.0225;
-
+*/
   //measurement covariance matrix - radar
+  R_radar_ = MatrixXd(3, 3);
+  R_radar_ << std_radr_*std_radr_, 0, 0,
+              0, std_radphi_*std_radphi_, 0,
+                0, 0,std_radrd_*std_radrd_;
+/*
   R_radar_ << 0.09, 0, 0,
         0, 0.0009, 0,
         0, 0, 0.09;
-*/  
+  R_radar_ = MatrixXd(3, 3);
+*/ 
+  
+  // Weights of sigma points
+  weights_ = VectorXd(2*n_aug_+1);
 }
 
 UKF::~UKF() {}
@@ -213,7 +234,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     // done initializing, no need to predict or update
     is_initialized_ = true;
     previous_timestamp_ = meas_package.timestamp_; // correction # 1
-    cout << "initialization: x_" << x_ << endl;
+    cout << "initialization: x_" << x_ << endl; //rbxok
     cout << "initialization: P_" << P_ << endl;
     return;
   }
@@ -402,8 +423,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   double lambda_ = 3 - n_aug_;
 
   //set vector for weights
-  VectorXd weights_ = VectorXd(2*n_aug_+1);
-   double weight_0_ = lambda_/(lambda_+n_aug_);
+  //VectorXd weights_ = VectorXd(2*n_aug_+1);
+  double weight_0_ = lambda_/(lambda_+n_aug_);
   weights_(0) = weight_0_;
   for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
     double weight_ = 0.5/(n_aug_+lambda_);
