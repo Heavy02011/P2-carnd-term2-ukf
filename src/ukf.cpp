@@ -147,7 +147,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       double vx = rho_dot * cos(phi);
       double vy = rho_dot * sin(phi);
       x_ << x, y, vx, vy,0;
-      // #### check #####
+
+      // ####### check ########
+
 */
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
@@ -214,7 +216,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Predict();
 */
   
-  cout << "ukf: testing +++ generate sigma points +++" << endl;
+  cout << "ukf: +++ prediction +++" << endl;
   //dt = 0.001;
   Prediction(dt);
   
@@ -227,28 +229,38 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      * Use the sensor type to perform the update step.
      * Update the state and covariance matrices.
    */
-/*
+
   if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
-    // Radar updates
-    //cout << "Updating Radar" << endl;
-    H_ = tools.CalculateJacobian(x_);
-    R_ = R_radar_;
-    UpdateEKF(meas_package.raw_measurements_);
+
+    if (use_radar_) {
+      // Radar updates
+      cout << "Updating Radar" << endl;
+      //H_ = tools.CalculateJacobian(x_);
+      //R_ = R_radar_;
+      cout << "meas_package.raw_measurements_" << meas_package.raw_measurements_ << endl;
+      //UpdateEKF(meas_package.raw_measurements_);
+      UpdateRadar(meas_package);
+
+    }
+
 
   } else {
-    // Laser updates
-    //measurement update
-    //cout << "Updating Laser" << endl;
-    H_ = H_laser_;
-    R_ = R_laser_;
-    Update(meas_package.raw_measurements_);
+
+    if (use_laser_) {
+      // Laser updates
+      //measurement update
+      cout << "Updating Laser" << endl;
+      //H_ = H_laser_;
+      //R_ = R_laser_;
+      //Update(meas_package.raw_measurements_);
+    }
 
   }
  
   // print the output
   cout << "x_ = " << x_ << endl;
   cout << "P_ = " << P_ << endl;
-*/  
+  
 }
 
 /**
@@ -267,25 +279,25 @@ void UKF::Prediction(double delta_t) {
   // 1. generate (augmented) sigma points x(k|k)
   MatrixXd Xsig = MatrixXd(11, 5);
   UKF::GenerateSigmaPoints(&Xsig);
-  std::cout << "Xsig = " << std::endl << Xsig << std::endl;
+  //std::cout << "Xsig = " << std::endl << Xsig << std::endl;
   
   MatrixXd Xsig_aug = MatrixXd(15, 7);
   UKF::AugmentedSigmaPoints(&Xsig_aug);
   //std::cout << "Xsig_aug = " << std::endl << Xsig_aug << std::endl;
-  std::cout << "Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl;
+  //##std::cout << "Xsig_aug_ = " << std::endl << Xsig_aug_ << std::endl;
   
   // 2. predict Sigma Points of next time step x(k+1|k)
   MatrixXd Xsig_pred = MatrixXd(15, 5);
   UKF::SigmaPointPrediction(&Xsig_pred);
   //std::cout << "Xsig_pred = " << std::endl << Xsig_pred << std::endl;
-  std::cout << "Xsig_pred_ = " << std::endl << Xsig_pred_ << std::endl;
+  //##std::cout << "Xsig_pred_ = " << std::endl << Xsig_pred_ << std::endl;
   
   // 3. predict mean and covariance of next time step
   VectorXd x_pred = VectorXd(5);
   MatrixXd P_pred = MatrixXd(5, 5);
   UKF::PredictMeanAndCovariance(&x_pred, &P_pred);
-  std::cout << "x_pred = " << std::endl << x_pred << std::endl;
-  std::cout << "P_pred = " << std::endl << P_pred << std::endl;
+  //##std::cout << "x_pred = " << std::endl << x_pred << std::endl;
+  //##std::cout << "P_pred = " << std::endl << P_pred << std::endl;
   
   //cout << "predict:<< std_a_, std_yawdd_   " << std_a_ << "   " << std_yawdd_ << endl;
 }
@@ -318,6 +330,172 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+
+  //set state dimension
+  n_x_ = 5;
+
+  //set augmented dimension
+  n_aug_ = 7;
+
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z_ = 3;
+
+  //define spreading parameter
+  double lambda_ = 3 - n_aug_;
+
+  //set vector for weights
+  VectorXd weights_ = VectorXd(2*n_aug_+1);
+   double weight_0_ = lambda_/(lambda_+n_aug_);
+  weights_(0) = weight_0_;
+  for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
+    double weight_ = 0.5/(n_aug_+lambda_);
+    weights_(i) = weight_;
+  }
+
+  //create example matrix with predicted sigma points
+  MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  Xsig_pred_ <<
+         5.9374,  6.0640,   5.925,  5.9436,  5.9266,  5.9374,  5.9389,  5.9374,  5.8106,  5.9457,  5.9310,  5.9465,  5.9374,  5.9359,  5.93744,
+           1.48,  1.4436,   1.660,  1.4934,  1.5036,    1.48,  1.4868,    1.48,  1.5271,  1.3104,  1.4787,  1.4674,    1.48,  1.4851,    1.486,
+          2.204,  2.2841,  2.2455,  2.2958,   2.204,   2.204,  2.2395,   2.204,  2.1256,  2.1642,  2.1139,   2.204,   2.204,  2.1702,   2.2049,
+         0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337,  0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188,  0.5367, 0.535048,
+          0.352, 0.29997, 0.46212, 0.37633,  0.4841, 0.41872,   0.352, 0.38744, 0.40562, 0.24347, 0.32926,  0.2214, 0.28687,   0.352, 0.318159;
+
+  //create example vector for predicted state mean
+  VectorXd x_ = VectorXd(n_x_);
+  x_ <<
+     5.93637,
+     1.49035,
+     2.20528,
+    0.536853,
+    0.353577;
+
+  //create example matrix for predicted state covariance
+  MatrixXd P_ = MatrixXd(n_x_,n_x_);
+  P_ <<
+  0.0054342,  -0.002405,  0.0034157, -0.0034819, -0.00299378,
+  -0.002405,    0.01084,   0.001492,  0.0098018,  0.00791091,
+  0.0034157,   0.001492,  0.0058012, 0.00077863, 0.000792973,
+ -0.0034819,  0.0098018, 0.00077863,   0.011923,   0.0112491,
+ -0.0029937,  0.0079109, 0.00079297,   0.011249,   0.0126972;
+
+  //create example matrix with sigma points in measurement space
+  MatrixXd Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
+  Zsig_ <<
+      6.1190,  6.2334,  6.1531,  6.1283,  6.1143,  6.1190,  6.1221,  6.1190,  6.0079,  6.0883,  6.1125,  6.1248,  6.1190,  6.1188,  6.12057,
+     0.24428,  0.2337, 0.27316, 0.24616, 0.24846, 0.24428, 0.24530, 0.24428, 0.25700, 0.21692, 0.24433, 0.24193, 0.24428, 0.24515, 0.245239,
+      2.1104,  2.2188,  2.0639,   2.187,  2.0341,  2.1061,  2.1450,  2.1092,  2.0016,   2.129,  2.0346,  2.1651,  2.1145,  2.0786,  2.11295;
+
+  //create example vector for mean predicted measurement
+  VectorXd z_pred_ = VectorXd(n_z_);
+  z_pred_ <<
+      6.12155,
+     0.245993,
+      2.10313;
+
+  //create example matrix for predicted measurement covariance
+  MatrixXd S_ = MatrixXd(n_z_,n_z_);
+  S_ <<
+      0.0946171, -0.000139448,   0.00407016,
+   -0.000139448,  0.000617548, -0.000770652,
+     0.00407016, -0.000770652,    0.0180917;
+
+  //create example vector for incoming radar measurement
+  VectorXd z_ = VectorXd(n_z_);
+  z_ <<
+      5.9214,
+      0.2187,
+      2.0062;
+
+  //create matrix for cross correlation Tc
+  MatrixXd Tc_ = MatrixXd(n_x_, n_z_);
+
+/*******************************************************************************
+ * Student part begin
+ ******************************************************************************/
+
+  //calculate cross correlation matrix
+  Tc_.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+    //residual
+    VectorXd z_diff_ = Zsig_.col(i) - z_pred_;
+    //angle normalization
+    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+
+    // state difference
+    VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
+    //angle normalization
+    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
+    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
+
+    Tc_ = Tc_ + weights_(i) * x_diff_ * z_diff_.transpose();
+  }
+
+  //Kalman gain K;
+  MatrixXd K_ = Tc_ * S_.inverse();
+
+  //residual
+  VectorXd z_diff_ = z_ - z_pred_;
+
+  //angle normalization
+  while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+  while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+
+  //update state mean and covariance matrix
+  x_ = x_ + K_ * z_diff_;
+  P_ = P_ - K_*S_*K_.transpose();
+
+/*******************************************************************************
+ * Student part end
+ ******************************************************************************/
+
+  //print result
+  std::cout << "UpdateRadar: Updated state x: " << std::endl << x_ << std::endl;
+  std::cout << "UpdateRadar: Updated state covariance P: " << std::endl << P_ << std::endl;
+
+  //write result
+  //*x_out = x;
+  //*P_out = P;
+
+  /* expected result x:
+     x =
+ 5.92276
+ 1.41823
+ 2.15593
+0.489274
+0.321338
+    */
+
+  /* expected result P:
+     P =
+  0.00361579 -0.000357881   0.00208316 -0.000937196  -0.00071727
+-0.000357881   0.00539867   0.00156846   0.00455342   0.00358885
+  0.00208316   0.00156846   0.00410651   0.00160333   0.00171811
+-0.000937196   0.00455342   0.00160333   0.00652634   0.00669436
+ -0.00071719   0.00358884   0.00171811   0.00669426   0.00881797
+ 
+ meas_package.raw_measurements_ 1.01489
+0.554329
+ 4.89281
+ 
+UpdateRadar: Updated state x: 
+ 5.92276
+ 1.41823
+ 2.15593
+0.489274
+0.321338
+
+UpdateRadar: Updated state covariance P: 
+  0.00361579 -0.000357881   0.00208316 -0.000937196  -0.00071727
+-0.000357881   0.00539867   0.00156846   0.00455342   0.00358885
+  0.00208316   0.00156846   0.00410651   0.00160333   0.00171811
+-0.000937196   0.00455342   0.00160333   0.00652634   0.00669436
+-0.00071719   0.00358884   0.00171811   0.00669426   0.00881797
+ 
+ */  
+
 }
 
 //#############################################################################

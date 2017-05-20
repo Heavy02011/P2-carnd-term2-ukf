@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
 
     // timestamp
     out_file_ << measurement_pack_list[k].timestamp_ << "\t"; // pos1 - est
-    cout << "main: ok1" << endl;
+    //cout << "main: ok1" << endl;
     // output the state vector
     out_file_ << ukf.x_(0) << "\t"; // pos1 - est
     out_file_ << ukf.x_(1) << "\t"; // pos2 - est
