@@ -161,8 +161,17 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       * Create the covariance matrix.
       * Remember: you'll need to convert radar from polar to cartesian coordinates.
     */
+/*      
+    // initialize state covarianve matrix
+    P_ << 1, 0, 0, 0, 0,
+          0, 1, 0, 0, 0,
+          0, 0, 1, 0, 0,
+          0, 0, 0, 1, 0,
+          0, 0, 0, 0, 1;
+*/
     //set the state with the initial location and zero velocity
-
+    //The state vector x for the CTRV model contains x=[px,p​y,v,psi,psidot]
+      
     // first measurement
     cout << "EKF: " << endl;
     //x_ = VectorXd(5);
@@ -172,7 +181,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       /**
       Convert radar from polar to cartesian coordinates and initialize state.
       */
-
+      
       double rho = meas_package.raw_measurements_[0];
       double phi = meas_package.raw_measurements_[1];
       double rho_dot = meas_package.raw_measurements_[2];
@@ -180,7 +189,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       double y= rho * sin(phi);
       double vx = rho_dot * cos(phi);
       double vy = rho_dot * sin(phi);
-      x_ << x, y, vx, vy,0;
+      double v = sqrt(vx*vx+vy*vy);
+      //x_ << x, y, vx, vy,0;
+      x_ << x, y, v, 0 ,0;
+            
 
       // ####### check ########
 
@@ -197,7 +209,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_ << px,py,v,psi,psidot;
 
     }
-
+    
     // done initializing, no need to predict or update
     is_initialized_ = true;
     previous_timestamp_ = meas_package.timestamp_; // correction # 1
