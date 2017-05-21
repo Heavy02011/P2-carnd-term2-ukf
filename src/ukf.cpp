@@ -152,21 +152,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    *  Initialization
    ****************************************************************************/
    if (!is_initialized_) {
-    //cout << "rbx: FusionEKF initializing..." << endl;
+    
     /**
     TODO:
       * Initialize the state ekf_.x_ with the first measurement.
       * Create the covariance matrix.
       * Remember: you'll need to convert radar from polar to cartesian coordinates.
     */
-/*      
-    // initialize state covarianve matrix
-    P_ << 1, 0, 0, 0, 0,
-          0, 1, 0, 0, 0,
-          0, 0, 1, 0, 0,
-          0, 0, 0, 1, 0,
-          0, 0, 0, 0, 1;
-*/
+      
     // initialize weights
     double weight_0_ = lambda_/(lambda_+n_aug_);
     weights_(0) = weight_0_;
@@ -430,15 +423,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   //define spreading parameter
   double lambda_ = 3 - n_aug_;
-
-  //set vector for weights
-  //VectorXd weights_ = VectorXd(2*n_aug_+1);
-  double weight_0_ = lambda_/(lambda_+n_aug_);
-  weights_(0) = weight_0_;
-  for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
-    double weight_ = 0.5/(n_aug_+lambda_);
-    weights_(i) = weight_;
-  }
   
   //create example vector for incoming radar measurement
   VectorXd z_ = VectorXd(n_z_); 
@@ -634,15 +618,6 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //define spreading parameter
   lambda_ = 3 - n_aug_;
-
-  //set vector for weights
-  VectorXd weights_ = VectorXd(2*n_aug_+1);
-   double weight_0_ = lambda_/(lambda_+n_aug_);
-  weights_(0) = weight_0_;
-  for (int i=1; i<2*n_aug_+1; i++) {  
-    double weight_ = 0.5/(n_aug_+lambda_);
-    weights_(i) = weight_;
-  }
   
   //transform sigma points into measurement space
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
@@ -687,11 +662,7 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
   }
 
   //add measurement noise covariance matrix
-  MatrixXd R_ = MatrixXd(n_z_,n_z_);
-  R_ <<    std_radr_*std_radr_, 0, 0,
-          0, std_radphi_*std_radphi_, 0,
-          0, 0,std_radrd_*std_radrd_;
-  S_ = S_ + R_;
+  S_ = S_ + R_radar_;
 
   //write result
   *z_out = z_pred_;
