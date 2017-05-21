@@ -155,8 +155,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     //The state vector x for the CTRV model contains x=[px,p​y,v,psi,psidot]
       
     // first measurement
-    //cout << "EKF: " << endl;
-    //x_ = VectorXd(5);
     x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
 
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
@@ -344,6 +342,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ = x_ + K_ * z_diff_;
   P_ = P_ - K_*S_*K_.transpose();
+  
+  // caclulate lidar NIS. --> https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/daf3dee8-7117-48e8-a27a-fc4769d2b954/concepts/f3ba9445-452d-4727-8209-b317d44ff1f1
+  NIS_laser_ = z_diff_.transpose() * S_.inverse() * z_diff_;
+  //cout << "NIS_laser_ = " << NIS_laser_  << endl;
     
 }
 
@@ -364,13 +366,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-
-  //set state dimension
-  n_x_ = 5;
-
-  //set augmented dimension
-  n_aug_ = 7;
-
+  
   //set measurement dimension, radar can measure r, phi, and r_dot
   n_z_ = 3;
 
@@ -391,14 +387,13 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     //residual
     VectorXd z_diff_ = Zsig_.col(i) - z_pred_;
     //angle normalization
-    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+    NormalizeAngle( &(z_diff_(1)) );
 
     // state difference
     VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
+    
     //angle normalization
-    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
-    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
+    NormalizeAngle( &(x_diff_(3)) );
 
     Tc_ = Tc_ + weights_(i) * x_diff_ * z_diff_.transpose();
   }
@@ -410,12 +405,15 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   VectorXd z_diff_ = z_ - z_pred_;
 
   //angle normalization
-  while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-  while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+  NormalizeAngle( &(z_diff_(1)) );
 
   //update state mean and covariance matrix
   x_ = x_ + K_ * z_diff_;
   P_ = P_ - K_*S_*K_.transpose();
+  
+  // caclulate radar NIS
+  NIS_radar_ = z_diff_.transpose() * S_.inverse() * z_diff_;
+  //cout << "NIS_radar_ = " << NIS_radar_  << endl;
 
 }
 
@@ -567,8 +565,7 @@ void UKF::PredictRadarMeasurement() {
     VectorXd z_diff_ = Zsig_.col(i) - z_pred_;
 
     //angle normalization
-    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+    NormalizeAngle( &(z_diff_(1)) );
 
     S_ = S_ + weights_(i) * z_diff_ * z_diff_.transpose();
   }
@@ -576,4 +573,11 @@ void UKF::PredictRadarMeasurement() {
   //add measurement noise covariance matrix
   S_ = S_ + R_radar_;
 
+}
+
+void UKF::NormalizeAngle(double *angle) { 
+    
+  while (*angle >  M_PI) *angle -= 2.*M_PI;
+  while (*angle < -M_PI) *angle += 2.*M_PI;
+  
 }

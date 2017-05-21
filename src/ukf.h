@@ -148,6 +148,8 @@ public:
   
   void PredictRadarMeasurement(); 
   
+  void NormalizeAngle(double *angle);
+  
 private:
 
   // previous timestamp
