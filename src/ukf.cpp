@@ -25,10 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 1.5; //30; //##############################################################
+  std_a_ = 1.5; 
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.5; //30; //##########################################################
+  std_yawdd_ = 0.5; 
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -53,7 +53,7 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
-  
+/*  
   //set example state
   //VectorXd x = VectorXd(n_x);
   x_ <<   5.7441,
@@ -61,7 +61,7 @@ UKF::UKF() {
          2.2049,
          0.5015,
          0.3528;
-
+*/
   //set example covariance matrix
   //MatrixXd P = MatrixXd(n_x, n_x);
 /* 
@@ -479,10 +479,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ = x_ + K_ * z_diff_;
   P_ = P_ - K_*S_*K_.transpose();
-
-  //print result
-  //std::cout << "UpdateRadar: Updated state x: " << std::endl << x_ << std::endl;
-  //std::cout << "UpdateRadar: Updated state covariance P: " << std::endl << P_ << std::endl;
 
 }
 
