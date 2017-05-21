@@ -70,6 +70,9 @@ UKF::UKF() {
   //define spreading parameter
   lambda_ = 3 - n_aug_;
   
+  // dimension placeholder for 2*n_aug_+1
+  n_sig_ = 2*n_aug_+1;
+  
   //create augmented mean vector
   x_aug_ = VectorXd(7);
 
@@ -77,10 +80,10 @@ UKF::UKF() {
   P_aug_ = MatrixXd(7, 7);
 
   //create sigma point matrix
-  Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+  Xsig_aug_ = MatrixXd(n_aug_, n_sig_); //2 * n_aug_ + 1);
   
   //create matrix with predicted sigma points as columns
-  Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  Xsig_pred_ = MatrixXd(n_x_, n_sig_); //2 * n_aug_ + 1);
   
   is_initialized_ = false;
 
@@ -96,7 +99,7 @@ UKF::UKF() {
   z_pred_ = VectorXd(3);
   
   //create matrix for sigma points in measurement space
-  Zsig_ = MatrixXd(n_z_, 2 * n_aug_ + 1);
+  Zsig_ = MatrixXd(n_z_, n_sig_); //2 * n_aug_ + 1);
 
   //measurement covariance matrix - laser
   R_lidar_ = MatrixXd(2, 2);
@@ -110,7 +113,7 @@ UKF::UKF() {
                 0, 0,std_radrd_*std_radrd_;
   
   // Weights of sigma points
-  weights_ = VectorXd(2*n_aug_+1);
+  weights_ = VectorXd(n_sig_); //2*n_aug_+1);
   
   // time elapsed between the current and previous measurements
   dt = 0.001;
@@ -147,7 +150,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     double weight_0_ = lambda_/(lambda_+n_aug_);
     weights_(0) = weight_0_;
     double weight_ = 0.5/(n_aug_+lambda_);
-    for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
+    for (int i=1; i<n_sig_; i++) {  //2n+1 weights
       weights_(i) = weight_;      
     }
     
@@ -452,7 +455,7 @@ void UKF::SigmaPointPrediction() {
   double delta_t = dt; //time diff in sec
 
   //predict sigma points
-  for (int i = 0; i< 2*n_aug_+1; i++)
+  for (int i = 0; i< n_sig_; i++)
   {
     //extract values for better readability
     double p_x = Xsig_aug_(0,i);
@@ -513,8 +516,7 @@ void UKF::PredictMeanAndCovariance() {
     // state difference
     VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
     //angle normalization
-    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
-    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
+    NormalizeAngle( &(x_diff_(3)) );
 
     P_ = P_ + weights_(i) * x_diff_ * x_diff_.transpose() ;
   }
@@ -551,7 +553,7 @@ void UKF::PredictRadarMeasurement() {
   //VectorXd z_pred_ = VectorXd(n_z_);
   z_pred_ = VectorXd(n_z_);
   z_pred_.fill(0.0);
-  for (int i=0; i < 2*n_aug_+1; i++) {
+  for (int i=0; i < n_sig_; i++) {
       z_pred_ = z_pred_ + weights_(i) * Zsig_.col(i);
   }
 

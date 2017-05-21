@@ -83,7 +83,6 @@ public:
   //create sigma point matrix
   MatrixXd Xsig_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
   
-  //####
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z_ = 3;
   
@@ -104,6 +103,9 @@ public:
   
   // time elapsed between the current and previous measurements
   float dt;
+  
+  // dimension placeholder for 2*n_aug_+1
+  int n_sig_;
   
   /**
    * Constructor
