@@ -269,30 +269,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   //compute the time elapsed between the current and previous measurements
   dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
   previous_timestamp_ = meas_package.timestamp_;
-/*  
-  // possible improvement: if ( dt > 0.001 )
-  float dt_2 = dt * dt; 
-  float dt_3 = dt_2 * dt;
-  float dt_4 = dt_3 * dt;
-
-  // setup matrix F
-  F_ << 1, 0, 1, 0,
-             0, 1, 0, 1,
-             0, 0, 1, 0,
-             0, 0, 0, 1;
-  //Modify the F matrix so that the time is integrated
-  F_(0, 2) = dt;
-  F_(1, 3) = dt;
-
-  //set the process covariance matrix Q
-  Q_ = MatrixXd(4, 4);
-  Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0, 
-              0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
-              dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
-              0, dt_3/2*noise_ay, 0, dt_2*noise_ay;  
-  
-  Predict();
-*/
   
   cout << "ukfProcessMeasurement: prediction" << endl;
   //dt = 0.001;
@@ -312,9 +288,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
     if (use_radar_) {
       // Radar updates
-      cout << "Updating Radar" << endl;
-      //H_ = tools.CalculateJacobian(x_);
-      //R_ = R_radar_;
+      cout << endl;
+      cout << "########## Updating Radar ##########" << endl;
+      cout << endl;
       //cout << "meas_package.raw_measurements_" << meas_package.raw_measurements_ << endl;
       //UpdateEKF(meas_package.raw_measurements_);
       UpdateRadar(meas_package);
@@ -327,10 +303,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     if (use_laser_) {
       // Laser updates
       //measurement update
-      cout << "Updating Laser" << endl;
-      //H_ = H_laser_;
-      //R_ = R_laser_;
-      //Update(meas_package.raw_measurements_);
+      cout << endl;
+      cout << "########## Updating Lidar ##########" << endl;
+      cout << endl;
+      UpdateLidar(meas_package);
     }
 
   }
@@ -395,6 +371,95 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+
+  // only 2 measurements, i.e. px & py
+  //n_z_ = 2;
+  
+  // hint: https://discussions.udacity.com/t/lidar-prediction-and-update/243853/2
+  cout << endl;
+  cout << "UKF::UpdateLidar: Xsig_pred_ = " << Xsig_pred_ << endl;
+  
+  MatrixXd Zsig = Xsig_pred_.topRows(2);  
+  cout << "UKF::UpdateLidar: Zsig = " << Zsig << endl;
+
+/* 
+  //set state dimension
+  n_x_ = 5;
+
+  //set augmented dimension
+  n_aug_ = 7;
+*/
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  n_z_ = 2;
+  
+  //create example vector for incoming radar measurement
+  VectorXd z_ = VectorXd(n_z_);
+  z_ << meas_package.raw_measurements_(0), meas_package.raw_measurements_(1);
+  
+  // Mean predicted measurement
+  z_pred_  = Zsig * weights_;
+  
+  //create matrix for cross correlation Tc
+  MatrixXd Tc_ = MatrixXd(n_x_, n_z_);
+  
+/*******************************************************************************
+ * Student part begin
+ ******************************************************************************/
+   
+  //calculate cross correlation matrix
+  Tc_.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+    
+    //residual
+    VectorXd z_diff_ = Zsig.col(i) - z_pred_;  // Zsig_ --> Zsig from above !!
+    
+    //angle normalization
+    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+    
+    // state difference
+    VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
+    
+    //angle normalization
+    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
+    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
+
+    Tc_ = Tc_ + weights_(i) * x_diff_ * z_diff_.transpose();
+  }
+  cout << "Tc=" << Tc_ << endl;
+  
+  //measurement covariance matrix S (from radar measurement prediction)
+  S_ = MatrixXd(n_z_,n_z_);
+  S_.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+    //residual
+    VectorXd z_diff_ = Zsig.col(i) - z_pred_;  // Zsig_ --> Zsig for lidar
+
+    //angle normalization
+    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+
+    S_ = S_ + weights_(i) * z_diff_ * z_diff_.transpose();
+  } 
+  cout << "S_=" << S_ << endl;  
+  
+  //Kalman gain K;
+  MatrixXd K_ = Tc_ * S_.inverse();
+      //cout << "here4=" << endl;
+      
+  //residual
+  VectorXd z_diff_ = z_ - z_pred_;
+
+  //angle normalization
+  while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+  while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+
+  //update state mean and covariance matrix
+  x_ = x_ + K_ * z_diff_;
+  P_ = P_ - K_*S_*K_.transpose();
+  
+  cout << "########## UKF::UpdateLidar +++ END +++ ##########" << endl;
+    
 }
 
 /**
@@ -431,7 +496,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   n_aug_ = 7;
 
   //set measurement dimension, radar can measure r, phi, and r_dot
-  int n_z_ = 3;
+  n_z_ = 3;
 
   //define spreading parameter
   double lambda_ = 3 - n_aug_;
@@ -874,10 +939,10 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //set augmented dimension
   n_aug_ = 7;
-
+*/
   //set measurement dimension, radar can measure r, phi, and r_dot
   n_z_ = 3;
-*/
+
   //define spreading parameter
   lambda_ = 3 - n_aug_;
 
@@ -939,6 +1004,7 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //mean predicted measurement
   //VectorXd z_pred_ = VectorXd(n_z_);
+  z_pred_ = VectorXd(n_z_);
   z_pred_.fill(0.0);
   for (int i=0; i < 2*n_aug_+1; i++) {
       z_pred_ = z_pred_ + weights_(i) * Zsig_.col(i);
@@ -946,6 +1012,8 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out) {
 
   //measurement covariance matrix S
   //MatrixXd S_ = MatrixXd(n_z_,n_z_);
+  S_ = MatrixXd(n_z_,n_z_);
+  
   S_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
     //residual
