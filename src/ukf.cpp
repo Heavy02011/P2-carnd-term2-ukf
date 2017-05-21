@@ -364,7 +364,7 @@ void UKF::Prediction(double delta_t) {
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
-  TODO:
+  TODO: angles correct???
 
   Complete this function! Use lidar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
@@ -382,13 +382,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   MatrixXd Zsig = Xsig_pred_.topRows(2);  
   //cout << "UKF::UpdateLidar: Zsig = " << Zsig << endl;
 
-/* 
-  //set state dimension
-  n_x_ = 5;
-
-  //set augmented dimension
-  n_aug_ = 7;
-*/
   //set measurement dimension, radar can measure r, phi, and r_dot
   n_z_ = 2;
   
@@ -401,10 +394,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   
   //create matrix for cross correlation Tc
   MatrixXd Tc_ = MatrixXd(n_x_, n_z_);
-  
-/*******************************************************************************
- * Student part begin
- ******************************************************************************/
    
   //calculate cross correlation matrix
   Tc_.fill(0.0);
@@ -414,21 +403,21 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     VectorXd z_diff_ = Zsig.col(i) - z_pred_;  // Zsig_ --> Zsig from above !!
     
     //angle normalization
-    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+    //while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    //while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
     
     // state difference
     VectorXd x_diff_ = Xsig_pred_.col(i) - x_;
     
     //angle normalization
-    while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
-    while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
+    //while (x_diff_(3)> M_PI) x_diff_(3)-=2.*M_PI;
+    //while (x_diff_(3)<-M_PI) x_diff_(3)+=2.*M_PI;
 
     Tc_ = Tc_ + weights_(i) * x_diff_ * z_diff_.transpose();
   }
   //cout << "Tc=" << Tc_ << endl;
   
-  //measurement covariance matrix S (from radar measurement prediction)
+  //measurement covariance matrix S (taken from radar measurement prediction)
   S_ = MatrixXd(n_z_,n_z_);
   S_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
@@ -436,8 +425,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     VectorXd z_diff_ = Zsig.col(i) - z_pred_;  // Zsig_ --> Zsig for lidar
 
     //angle normalization
-    while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-    while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+    //while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+    //while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
 
     S_ = S_ + weights_(i) * z_diff_ * z_diff_.transpose();
   } 
@@ -450,8 +439,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   VectorXd z_diff_ = z_ - z_pred_;
 
   //angle normalization
-  while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
-  while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
+  //while (z_diff_(1)> M_PI) z_diff_(1)-=2.*M_PI;
+  //while (z_diff_(1)<-M_PI) z_diff_(1)+=2.*M_PI;
 
   //update state mean and covariance matrix
   x_ = x_ + K_ * z_diff_;
