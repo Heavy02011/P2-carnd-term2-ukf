@@ -205,7 +205,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     //The state vector x for the CTRV model contains x=[px,p​y,v,psi,psidot]
       
     // first measurement
-    cout << "EKF: " << endl;
+    //cout << "EKF: " << endl;
     //x_ = VectorXd(5);
     x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
 
@@ -255,14 +255,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    *  Prediction
    ****************************************************************************/
 
-  /**
-   TODO:
-     * Update the state transition matrix F according to the new elapsed time.
-      - Time is measured in seconds.
-     * Update the process noise covariance matrix.
-     * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
-   */
-
+  cout << endl;
+  cout << "########## Prediction ##########" << endl;
+  cout << endl;
+      
   float noise_ax = 9;
   float noise_ay = 9;
 
@@ -270,8 +266,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
   previous_timestamp_ = meas_package.timestamp_;
   
-  cout << "ukfProcessMeasurement: prediction" << endl;
-  //dt = 0.001;
+  // perform prediction step
   Prediction(dt);
   
   /*****************************************************************************
@@ -415,7 +410,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     Tc_ = Tc_ + weights_(i) * x_diff_ * z_diff_.transpose();
   }
-  //cout << "Tc=" << Tc_ << endl;
+  cout << "Tc=" << Tc_ << endl;
   
   //measurement covariance matrix S (taken from radar measurement prediction)
   S_ = MatrixXd(n_z_,n_z_);
@@ -430,7 +425,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     S_ = S_ + weights_(i) * z_diff_ * z_diff_.transpose();
   } 
-  //cout << "S_=" << S_ << endl;  
+  // add measurement noise for lidar
+  S_ = S_ + R_lidar_;
+  cout << "S_=" << S_ << endl;  
   
   //Kalman gain K;
   MatrixXd K_ = Tc_ * S_.inverse();
