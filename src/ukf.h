@@ -139,16 +139,14 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+    
+  void AugmentedSigmaPoints(); 
   
-  void GenerateSigmaPoints(MatrixXd* Xsig_out);
+  void SigmaPointPrediction(); 
   
-  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
+  void PredictMeanAndCovariance(); 
   
-  void SigmaPointPrediction(MatrixXd* Xsig_out);
-  
-  void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
-  
-  void PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out);
+  void PredictRadarMeasurement(); 
   
 private:
 
